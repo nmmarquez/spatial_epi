@@ -1,5 +1,9 @@
 *.pyc
 *~
 .idea/
-*.ipynb
+hw*.pdf
 *.ipynb_checkpoints
+*.csv
+*.dat
+r_slides/
+lecture_slides/

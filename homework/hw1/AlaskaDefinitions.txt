@@ -1,0 +1,61 @@
+﻿INTERSECTI These next four variables were created to aid in GIS placement.
+NEW_ID
+X_COORD
+Y_COORD
+BATCHRDA This was the day that data was entered.
+V2 This is the first street.
+V3 This is the second street
+GENDER 0=male, 1=female
+YEARS age of child in years
+MONTHS additional months of age
+WHITE 0=not 1=yes
+BLACK 0=no, 1=yes
+NATIVE 0=no, 1=yes
+ASIAN 0=no, 1=yes
+HISPANIC 0=no, 1=yes
+PACISLAN 0=no, 1=yes
+OTHER 0=no, 1=yes
+COUGH 0= never, 1= occasionally, 2=monthly, 3=weekly, 4=daily
+WHEEZE 0= never, 1= occasionally, 2=monthly, 3=weekly, 4=daily 
+MEDS 0= never, 1= occasionally, 2=monthly, 3=weekly, 4=daily
+ILLNESSS 1=0-1, 2=2-4, 3=5-7, 4= 8 or more respiratory illnesses per year
+PARENTAS 0=no, 1=yes, 2=unknown Parental asthma
+ASTHMA 0=no, 1= yes
+V20 age at which child was diagnosed with asthma in years
+V21 age of diagnosis in additional months
+PEOPLE How many people live in the house 
+TIME How long child has lived in the neighborhood 1=<1year, 2=1-2 yrs, 3=2-3 yrs, 4=4+yrs
+SMOKE Smoker in the house 0=no,1=yes
+MOTHER 1=mother smokes 
+FATHER 1=father smokes
+SOMEONE 1=someone else in house smokes
+WHO person in house who smokes
+CIGARRET 0=none, 1=1-10, 2=11-20, 3=>20 cigarettes smoked daily in house
+PETS number of pets indoors
+MOLD 1=mold often seen in house, 2=mold occasionally seen, 3=mold never seen in house
+HOMETYPE1=2-4plex, 2=apartment complex, 3=mobile home, 4=single family home
+FORCEDAI  1= forced air heat
+HWBB  1=hot water baseboard heat
+OIL  1=oil furnace
+WOOD  1=wood stove
+ELECTRIC  1= electric heaters
+KEROSENE  1=kerosene heaters
+HEATERS  1= other type of heat
+WHAT type of heat otherwise unspecified
+COCKROAC 1= often, 2=occasionally, 3=never seen in house.
+HUMIDIFI 1= often use humidifier, 2= occasionally use, 3= never use humidifier
+Q19STEAM 1= steam humidifier used
+Q19CMIST 1=cold mist humidifier used
+Q19UNK 1= humidifier type unknown
+GARAGE 0= no, 1=yes
+CARS number of cars parked in garage
+ENGINES number of gasoline engines in garage
+GASOLINE  0=not stored in garage, 1= yes, gasoline is stored in garage
+INCOME 1=<$20K, 2=$20-49K, 3=$50-100K, 4=$100+
+SCH_ID Name of school
+BUFF_ID
+X_COORD
+Y_COORD
+COUNT
+TRAFFIC_DOSE Calculated dose of traffic within a 100 meter buffer zone to coordinate point
+
