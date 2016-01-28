@@ -33,3 +33,6 @@ $\theta_{i} = exp(\beta \times X) \delta_{i} \eta_{i}$
 - sprinkle in covariates  
 - what are the estimation techniques  
 - remember that smoothing introduces bias  
+
+### Prior choice for Poisson-log-normal models
+easier to model precision rather than variance
