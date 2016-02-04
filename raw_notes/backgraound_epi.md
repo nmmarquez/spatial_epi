@@ -37,11 +37,3 @@ where $\lambda(t_{i})$ is the hazard function or the **instantaneous** probabili
 
 Remember that the hazard function is a rate which is shown by rearranging the above equation  
 $\lambda (t_{i}) \approx \pi (t_{i}) / h$
-
-```R
-lambda <- pi / h
-```
-
-```python 
-lambda = float(pi) / float(h)
-```
