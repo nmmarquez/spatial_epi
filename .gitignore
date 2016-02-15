@@ -5,5 +5,10 @@ hw*.pdf
 *.ipynb_checkpoints
 *.csv
 *.dat
+*.txt
+*.graph
+*_nb
+*.RData
 r_slides/
 lecture_slides/
+*.Rdata
