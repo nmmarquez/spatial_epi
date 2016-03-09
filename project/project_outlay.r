@@ -95,7 +95,7 @@ rmvn <- function(n, mu = 0, V = matrix(1)) {
 simulate_sre <- function(dist_mat){
     N <- nrow(dist_mat)
     phi <- 0.38
-    exp(rmvn(1, rep(0, N), exp(-phi * dist_mat)))
+    rmvn(1, rep(0, N), exp(-phi * dist_mat))
 } 
 
 delta_simulatar <- function(unit){
@@ -106,27 +106,73 @@ delta_simulatar <- function(unit){
     N <- length(sp) # number of counties in a state unit
     sp$ID <- 1:N
     
-    datur_od <- sapply(1:100, function(x) rgamma(length(sp), 4, 4))
+    datur_od <- sapply(1:100, function(x) rnorm(length(sp), 0, 1))
     datur_se <- sapply(1:100, function(x) simulate_sre(dist_mat))
+    x1 <- sapply(1:100, function(x)rnorm(length(sp)))
+    x2 <- sapply(1:100, function(x)rnorm(length(sp)))
+    beta1 <- 2
+    beta2 <- -3
+    mean_ <- beta1 * x1 + beta2 * x2
+    random <- sapply(1:ncol(datur_od), function(x) 
+        rpois(length(datur_od[,x]), exp(datur_od[,x])))
+    spatial <- sapply(1:ncol(datur_se), function(x) 
+        rpois(length(datur_se[,x]), exp(datur_se[,x])))
+    both <- sapply(1:ncol(datur_se), function(x) 
+        rpois(length(datur_se[,x]), exp(datur_se[,x] + datur_od[,x])))
+    random_covs <- sapply(1:ncol(datur_od), function(x) 
+        rpois(length(datur_od[,x]), exp(mean_[,x] + datur_od[,x])))
+    spatial_covs <- sapply(1:ncol(datur_se), function(x) 
+        rpois(length(datur_se[,x]), exp(mean_[,x] + datur_se[,x])))
+    both_covs <- sapply(1:ncol(datur_se), function(x) 
+        rpois(length(datur_se[,x]), exp(mean_[,x] + datur_se[,x] + datur_od[,x])))
     
-    
-    sp@data[,paste0("realization_odre", 1:100)] <- datur_od
-    sp@data[,paste0("realization_sre", 1:100)] <- datur_se
+    sp@data[,paste0("over_dispersion", 1:100)] <- datur_od
+    sp@data[,paste0("spatial_random", 1:100)] <- datur_se
+    sp@data[,paste0("x1", 1:100)] <- x1
+    sp@data[,paste0("x2", 1:100)] <- x2
+    sp@data[,paste0("random", 1:100)] <- random
+    sp@data[,paste0("spatial", 1:100)] <- spatial
+    sp@data[,paste0("both", 1:100)] <- both
+    sp@data[,paste0("random_covs", 1:100)] <- random_covs
+    sp@data[,paste0("spatial_covs", 1:100)] <- spatial_covs
+    sp@data[,paste0("both_covs", 1:100)] <- both_covs
+
     sp
 }
                                                
 state_data <- apply2(delta_simulatar,"SpatialPolygons", state_data)
 par(mfcol=c(1,2))
-p1 <- spplot(state_data$California$SpatialPolygons, "realization_sre100", 
+p1 <- spplot(state_data$California$SpatialPolygons, "spatial100", 
              main="Simulated Spatial Random Effects")
-p2 <- spplot(state_data$California$SpatialPolygons, "realization_odre100",
+p2 <- spplot(state_data$California$SpatialPolygons, "random100",
              main="Simulated Overdispersion Random Effects")
-p3 <- spplot(state_data$Washington$SpatialPolygons, "realization_sre100", 
+p3 <- spplot(state_data$Washington$SpatialPolygons, "spatial100", 
              main="Simulated Spatial Random Effects")
-p4 <- spplot(state_data$Washington$SpatialPolygons, "realization_odre100",
+p4 <- spplot(state_data$Washington$SpatialPolygons, "random100",
              main="Simulated Overdispersion Random Effects")
 
 print(p1, position=c(0, .5, .5, 1), more=T)
 print(p2, position=c(.5, .5, 1, 1), more=T)
 print(p3, position=c(0, 0, .5, .5), more=T)
 print(p4, position=c(.5, 0, 1, .5))
+
+# specify the latent structure using a formula object
+formula <- y ~ 1 + f ( region ,
+                      model = " bym2 " ,
+                      graph =g ,
+                      scale.model = TRUE ,
+                      constr = TRUE ,
+                      hyper = list (
+                          phi = list (
+                              prior = "pc" ,
+                              param = c (0.5 , 2 / 3) ,
+                              initial = -3) ,
+                          prec = list (
+                              prior = " pc.prec " ,
+                              param = c (0.2 / 0.31 , 0.01) ,
+                              initial = 5) ) )
+# call the inla function
+result = inla ( formula , data = sardinia , family = " poisson " , E =E ,
+                control.predictor = list ( compute = TRUE ) )
+# get improved estimates for the h y p e r p a r a m e t e r s
+result = inla.hyperpar (r , dz = 0.2 , diff . logdens =20)
