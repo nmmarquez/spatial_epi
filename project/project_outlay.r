@@ -13,8 +13,8 @@ library(surveillance)
 library(parallel)
 library(MASS)
 
-M <- 10 # number of simulations
-phi <- seq(1/M,1,length.out=M)
+M <- 150 # number of simulations
+phi <- c(rep(.25, M/3), rep(.5, M/3), rep(.75, M/3))
 tau <- 4
 true_betas <- c(1, -1)
 
@@ -135,19 +135,19 @@ run_bym2_safe <- function(i, covs, pc){
 cont_usa$SpatialPolygons <- delta_simulatar(cont_usa)
 
 timestamp()
-no_covs_no_pc <- mclapply(1:M, function(i) run_bym2_safe(i, F, F), mc.cores=50)
+no_covs_no_pc <- mclapply(1:M, function(i) run_bym2_safe(i, F, F), mc.cores=4)
 no_covs_no_pc <- do.call(rbind, no_covs_no_pc)
 print("25% complete")
 timestamp()
-no_covs_yes_pc <- mclapply(1:M, function(i) run_bym2_safe(i, F, T), mc.cores=50)
+no_covs_yes_pc <- mclapply(1:M, function(i) run_bym2_safe(i, F, T), mc.cores=4)
 no_covs_yes_pc <- do.call(rbind, no_covs_yes_pc)
 print("50% complete")
 timestamp()
-yes_covs_no_pc <- mclapply(1:M, function(i) run_bym2_safe(i, T, F), mc.cores=50)
+yes_covs_no_pc <- mclapply(1:M, function(i) run_bym2_safe(i, T, F), mc.cores=4)
 yes_covs_no_pc <- do.call(rbind, yes_covs_no_pc)
 print("75% complete")
 timestamp()
-yes_covs_yes_pc <- mclapply(1:M, function(i) run_bym2_safe(i, T, T), mc.cores=50)
+yes_covs_yes_pc <- mclapply(1:M, function(i) run_bym2_safe(i, T, T), mc.cores=4)
 yes_covs_yes_pc <- do.call(rbind, yes_covs_yes_pc)
 print("100% complete")
 timestamp()
@@ -196,7 +196,7 @@ mean(results_df$yes_covs_no_pc$beta1_rse, na.rm=T) - mean(results_df$yes_covs_ye
 plot(results_df$yes_covs_no_pc$beta2_rse, results_df$yes_covs_yes_pc$beta2_rse)
 mean(results_df$yes_covs_no_pc$beta2_rse, na.rm=T) - mean(results_df$yes_covs_yes_pc$beta2_rse, na.rm=T)
 
-bad_result <- which(results_df$no_covs_yes_pc$phi_rse > .6)
+#bad_result <- which(results_df$no_covs_yes_pc$phi_rse > .6)
 
-summary(run_bym2(bad_result[1], F, T, T))
+#summary(run_bym2(bad_result[1], F, T, T))
 
