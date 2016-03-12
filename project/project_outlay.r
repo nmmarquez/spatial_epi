@@ -13,53 +13,28 @@ library(surveillance)
 library(parallel)
 library(MASS)
 
-phi <- seq(0.01,1,.01)
+M <- 10 # number of simulations
+phi <- seq(1/M,1,length.out=M)
+tau <- 4
+true_betas <- c(1, -1)
 
 ## Get Pennsylvania map file
 setwd("~/Documents/Classes/spatial_epi/project/")
 load("../homework/hw3/USA_adm2.RData") # From http://gadm.org/
 
-cont_usa_locs <- c("Texas", "Louisiana", "Arkansas", "Oklahoma")
+cont_usa_locs <- c("Texas", "Louisiana")
 
 cont_usa <- gadm[(gadm@data$NAME_1 %in% cont_usa_locs),]
 
-# define the 50 states remove DC
-states <- unique(gadm$NAME_1)
-states <- as.character(states[!(states %in% c("District of Columbia"))])
+cont_usa <- list(name="cont_usa", "SpatialPolygons" = cont_usa)
 
-# each data unit will be a state with different data
-state_data <- lapply(states, function(x) list(name=x))
-names(state_data) <- states
+cont_usa$adjmat <- poly2adjmat(cont_usa$SpatialPolygons)
 
-# while testing lets only keep three states
-state_data <- state_data[c("California", "Tennessee")]
-
-apply2 <- function(f, new_key, state_data, cores=1){
-    # apply a function in parallel to an old key of state data and then
-    # add the newely generated data to the key list
-    states <- names(state_data)
-    temp <- mclapply(states, function(x) 
-        f(state_data[[x]]), mc.cores=cores)
-    names(temp) <- states
-    for(state in states){
-        state_data[[state]][[new_key]] <- temp[[state]]
-    }
-    state_data
-}
-
-state_data <- apply2(function(x) as(gadm[which(gadm$NAME_1==x$name),], "SpatialPolygons"), 
-                     "SpatialPolygons", state_data, cores=3)
-
-# state_data$cont_usa <- list(name="cont_usa", "SpatialPolygons" = cont_usa)
-
-state_data <- apply2(function(x) poly2adjmat(x$SpatialPolygons), 
-                     "adjmat", state_data, cores=3)
-
-simulate_sre <- function(Q){
+simulate_sre <- function(Q, M){
     n <- nrow(Q)
     Qs <- inla.scale.model(Q, constr=list(A=matrix(1, nrow=1, ncol=n), e=0))
     Q_star <- ginv(as.matrix(Qs))
-    t(mvrnorm(n=100, 0 * 1:n, Q_star))
+    t(mvrnorm(n=M, 0 * 1:n, Q_star))
 }
 
 delta_simulatar <- function(unit){
@@ -72,14 +47,19 @@ delta_simulatar <- function(unit){
     n_delta_i <- rowSums(unit$adjmat)
     Q <- unit$adjmat * -1
     diag(Q) <- n_delta_i
+    print("qflipped")
     
-    v <- sapply(1:100, function(x) rnorm(length(sp), 0, 1))
-    u <- sapply(1:100, function(x) simulate_sre(Q))
-    x1 <- sapply(1:100, function(x)rnorm(length(sp)))
-    x2 <- sapply(1:100, function(x)rnorm(length(sp)))
-    beta1 <- 2
-    beta2 <- -3
-    prec <- 1/sqrt(.5)
+    v <- sapply(1:M, function(x) rnorm(length(sp), 0, 1))
+    print("v created")
+    u <- simulate_sre(Q, M=M)
+    print("u created")
+    
+    x1 <- sapply(1:M, function(x)rnorm(length(sp)))
+    x2 <- sapply(1:M, function(x)rnorm(length(sp)))
+    print("x created")
+    beta1 <- true_betas[1]
+    beta2 <- true_betas[2]
+    prec <- 1/sqrt(tau)
     mean_ <- beta1 * x1 + beta2 * x2
     random <- sapply(1:ncol(v), function(x) 
         rpois(length(v[,x]), exp(prec * v[,x])))
@@ -88,6 +68,7 @@ delta_simulatar <- function(unit){
     both <- sapply(1:ncol(u), function(x) 
         rpois(length(u[,x]), 
               exp(prec * (sqrt(1 - phi[x]) * v[,x] + sqrt(phi[x]) * u[,x]))))
+    print("constant created")
     random_covs <- sapply(1:ncol(v), function(x) 
         rpois(length(v[,x]), exp(mean_[,x] + prec * v[,x])))
     spatial_covs <- sapply(1:ncol(u), function(x) 
@@ -95,67 +76,127 @@ delta_simulatar <- function(unit){
     both_covs <- sapply(1:ncol(u), function(x) 
         rpois(length(u[,x]), 
               exp(mean_[,x] + prec * (sqrt(1 - phi[x]) * v[,x] + sqrt(phi[x]) * u[,x]))))
+    print("cov adjusted created")
     
-    sp@data[,paste0("v", 1:100)] <- v
-    sp@data[,paste0("u", 1:100)] <- u
-    sp@data[,paste0("x1", 1:100)] <- x1
-    sp@data[,paste0("x2", 1:100)] <- x2
-    sp@data[,paste0("random", 1:100)] <- random
-    sp@data[,paste0("spatial", 1:100)] <- spatial
-    sp@data[,paste0("both", 1:100)] <- both
-    sp@data[,paste0("random_covs", 1:100)] <- random_covs
-    sp@data[,paste0("spatial_covs", 1:100)] <- spatial_covs
-    sp@data[,paste0("both_covs", 1:100)] <- both_covs
+    sp@data[,paste0("v", 1:M)] <- v
+    sp@data[,paste0("u", 1:M)] <- u
+    sp@data[,paste0("x1", 1:M)] <- x1
+    sp@data[,paste0("x2", 1:M)] <- x2
+    sp@data[,paste0("random", 1:M)] <- random
+    sp@data[,paste0("spatial", 1:M)] <- spatial
+    sp@data[,paste0("both", 1:M)] <- both
+    sp@data[,paste0("random_covs", 1:M)] <- random_covs
+    sp@data[,paste0("spatial_covs", 1:M)] <- spatial_covs
+    sp@data[,paste0("both_covs", 1:M)] <- both_covs
     
     sp
 }
 
-state_data <- apply2(delta_simulatar,"SpatialPolygons", state_data)
-
-plot_ca_tn <- function(sim_num){
-    ca_datur <- state_data$California$SpatialPolygons
-    tn_datur <- state_data$Tennessee$SpatialPolygons
-    spat_text <- "Simulated Spatial Random Effects"
-    od_text <- "Simulated Overdispersion Random Effects"
-    p1 <- spplot(ca_datur, paste0("spatial", sim_num), main=spat_text)
-    p2 <- spplot(ca_datur, paste0("random", sim_num), main=od_text)
-    p3 <- spplot(tn_datur, paste0("spatial", sim_num), main=spat_text)
-    p4 <- spplot(tn_datur, paste0("random", sim_num), main=od_text)
-    print(p1, position=c(0, .5, .5, 1), more=T)
-    print(p2, position=c(.5, .5, 1, 1), more=T)
-    print(p3, position=c(0, 0, .5, .5), more=T)
-    print(p4, position=c(.5, 0, 1, .5))
+run_bym2 <- function(i, covs, pc){
+    base <- 'f(ID, model = "bym2", scale.model=T, constr=T, graph=cont_usa$adjmat '
+    phi_str <- 'phi=list(prior ="pc", param=c(0.5, 2/3), initial=-3), \n\t\t'
+    prec_str <- 'prec=list(prior="pc.prec", initial=5, param=c(0.2/0.31, 0.01))'
+    hyper <- paste0(',\n hyper=list(', phi_str, prec_str, ")")
+    if(pc){
+        re <- paste0(base, hyper, ")")
+    }
+    else{
+        re <- paste0(base, ")")
+    }
+    if(covs){
+        mean_ <- paste0("both_covs", i, " ~ x1", i," + x2", i," + ")
+    }
+    else{
+        mean_ <- paste0("both", i, "~ 1 + ")
+    }
+    form <- formula(paste0(mean_, re))
+    result <- inla(form , data=cont_usa$SpatialPolygons@data,
+                   family="poisson", control.predictor=list(compute=T))
+    betas <- result$summary.fixed[,"0.5quant"]
+    beta_sd <- result$summary.fixed[,"sd"]
+    if (length(betas) < 3){
+        betas <- c(betas, NA, NA)
+        beta_sd <- c(beta_sd, NA, NA)
+    }
+    betas_ <- (betas - c(0, true_betas))**2
+    tau_ <- (result$summary.hyperpar["Precision for ID", "0.5quant"] - tau)**2
+    tau_sd <- result$summary.hyperpar["Precision for ID", "sd"]
+    phi_ <- (result$summary.hyperpar["Phi for ID","0.5quant"] - phi[i])**2
+    phi_sd <- result$summary.hyperpar["Phi for ID","sd"]
+    c(betas_, tau_, phi_, beta_sd, tau_sd, phi_sd)
 }
 
-plot_ca_tn(100)
+run_bym2_safe <- function(i, covs, pc){
+    out <- tryCatch({run_bym2(i, covs, pc)}, 
+                    error=function(cond){c(NA, NA, NA, NA, NA)})
+    out
+}
 
-df <- state_data$Tennessee$SpatialPolygons@data
-adj <- state_data$Tennessee$adjmat 
+cont_usa$SpatialPolygons <- delta_simulatar(cont_usa)
 
-summary(inla(spatial_covs100 ~ x1100 + x2100 + 
-                 f(ID, model = "iid", param = c(1, 0.014)), 
-             data=df, family="poisson"))
+timestamp()
+no_covs_no_pc <- mclapply(1:M, function(i) run_bym2_safe(i, F, F), mc.cores=50)
+no_covs_no_pc <- do.call(rbind, no_covs_no_pc)
+print("25% complete")
+timestamp()
+no_covs_yes_pc <- mclapply(1:M, function(i) run_bym2_safe(i, F, T), mc.cores=50)
+no_covs_yes_pc <- do.call(rbind, no_covs_yes_pc)
+print("50% complete")
+timestamp()
+yes_covs_no_pc <- mclapply(1:M, function(i) run_bym2_safe(i, T, F), mc.cores=50)
+yes_covs_no_pc <- do.call(rbind, yes_covs_no_pc)
+print("75% complete")
+timestamp()
+yes_covs_yes_pc <- mclapply(1:M, function(i) run_bym2_safe(i, T, T), mc.cores=50)
+yes_covs_yes_pc <- do.call(rbind, yes_covs_yes_pc)
+print("100% complete")
+timestamp()
 
-summary(inla(spatial_covs100 ~ x1100 + x2100 +
-                 f(ID, model="besag", graph=adj,
-                   param = c(1, 0.68)), 
-             data=df, family="poisson"))
+f <- "./results.Rdata"
 
-summary(inla(spatial_covs1 ~ x11 + x21 + f(ID, model="bym2", graph=adj), 
-             data=df, family="poisson"))
+save(no_covs_no_pc, no_covs_yes_pc, yes_covs_no_pc, yes_covs_yes_pc, file=f)
+load(f)
 
-summary(inla(spatial100 ~ 1 + f(ID, model="bym2", graph=adj), 
-             data=df, family="poisson"))
+sim_num=10
+spat_text="spatial"
+od_text="overdispersion"
+spplot(cont_usa$SpatialPolygons, paste0("u", sim_num), main=spat_text)
+spplot(cont_usa$SpatialPolygons, paste0("v", sim_num), main=od_text)
 
-# specify the latent structure using a formula object
-formula <- both100 ~ 1 + 
-    f(ID, model = "bym2", scale.model=T, constr=T, graph=adj, 
-      hyper=list(phi=list(prior ="pc", param=c(0.5, 2/3), initial=-3),
-                 prec=list(prior="pc.prec", initial=5, param=c(0.2/0.31, 0.01))))
+results <- list(no_covs_no_pc, no_covs_yes_pc, yes_covs_no_pc, yes_covs_yes_pc)
 
-# call the inla function
-result <- inla(formula , data=df,
-               family="poisson", control.predictor=list(compute=T))
-# get improved estimates for the h y p e r p a r a m e t e r s
-result <- inla.hyperpar(result , dz=0.2 , diff.logdens=20)
-summary(result)
+results_df <- lapply(results, as.data.frame) 
+names(results_df) <- c("no_covs_no_pc", "no_covs_yes_pc", 
+                       "yes_covs_no_pc", "yes_covs_yes_pc")
+
+for(i in 1:4){
+    names(results_df[[i]]) <- c("beta0_rse", "beta1_rse", "beta2_rse",
+                                "tau_rse", "phi_rse", "beta0_sd", "beta1_sd",
+                                "tau_sd", "phi_sd")
+    results_df[[i]]$phi <- phi
+}
+
+with(results_df$no_covs_no_pc, plot(phi, phi_rse))
+with(results_df$no_covs_yes_pc, plot(phi, phi_rse))
+plot(results_df$no_covs_no_pc$phi_rse, results_df$no_covs_yes_pc$phi_rse)
+plot(results_df$no_covs_no_pc$tau_rse, results_df$no_covs_yes_pc$tau_rse)
+
+with(results_df$no_covs_no_pc, hist(log(phi_rse)))
+with(results_df$no_covs_no_pc, 
+     lines(c(mean(log(phi_rse), na.rm=T), mean(log(phi_rse), na.rm=T)), c(0,1000), col="red", lwd=2))
+with(results_df$no_covs_yes_pc, hist(log(phi_rse)))
+with(results_df$no_covs_yes_pc, 
+     lines(c(mean(log(phi_rse), na.rm=T), mean(log(phi_rse), na.rm=T)), c(0,1000), col="red", lwd=2))
+with(results_df$no_covs_yes_pc, mean(phi_rse, na.rm=T))
+
+plot(results_df$yes_covs_no_pc$beta0_rse, results_df$yes_covs_yes_pc$beta0_rse)
+mean(results_df$yes_covs_no_pc$beta0_rse, na.rm=T) - mean(results_df$yes_covs_yes_pc$beta0_rse, na.rm=T)
+plot(results_df$yes_covs_no_pc$beta1_rse, results_df$yes_covs_yes_pc$beta1_rse)
+mean(results_df$yes_covs_no_pc$beta1_rse, na.rm=T) - mean(results_df$yes_covs_yes_pc$beta1_rse, na.rm=T)
+plot(results_df$yes_covs_no_pc$beta2_rse, results_df$yes_covs_yes_pc$beta2_rse)
+mean(results_df$yes_covs_no_pc$beta2_rse, na.rm=T) - mean(results_df$yes_covs_yes_pc$beta2_rse, na.rm=T)
+
+bad_result <- which(results_df$no_covs_yes_pc$phi_rse > .6)
+
+summary(run_bym2(bad_result[1], F, T, T))
+
