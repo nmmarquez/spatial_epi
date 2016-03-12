@@ -122,11 +122,12 @@ For testing how well the BYM2 model is able to accurately reproduce $\phi$ we
 specify the variables such that $\beta$ is a vector with one element $0$, 
 $x$ is a matrix with a single column which is $N_{iid}(0, 1)$ , 
 $\frac{1}{\sqrt{\tau}} = .5$, $v \sim N(0, 1)$, 
-$u_{\star} \sim N(0, Q_{\star}^{-})$. We vary values of $\phi$ by 
-increments of $.001$ from $.001$ to $1$. In this way we can look at how the
-estimated values of $\phi$ change as we approach critical points of 
-$0$ (no spatial errors), $1$ (only spatial errors), and $.5$ (errors that 
-have both overdispersion and spatial components). 
+$u_{\star} \sim N(0, Q_{\star}^{-})$. We vary values of $\phi$ to be either  
+$.25$, $.50$, or $.75$. In this way we can look at how the
+estimated values of $\phi$ change as we vary the weight of the random effects 
+to be present for both simple overdispersion and spatially correlated with
+even weights($.5$), biased towards simple overdispersion, or biased towards 
+spatial effects. 
 
 To test the effectiveness of the BYM2 model to return accurate estimates of 
 covariates a similar form is used to generate data with the following 
@@ -142,4 +143,16 @@ number of covariates (0 for the first model and 2 for the second) and asses the
 models ability to recover the true parameters, both $\beta$ and $\phi$ form the 
 simulated data. All analysis was done in R (version 3.2.3) and a reproducible 
 version of the code may be found at:  
+https://github.com/nmmarquez/spatial_epi/blob/master/project/project_outlay.r
 
+## Results
+
+## Discussion
+
+We found that the use of the PC prior in conjunction with a modified bym model 
+provided consistently accurate estimates of both $\phi$ and $\beta$. When 
+$\phi$ was adjusted to represent mostly spatial, mostly overdispersion, or
+an even split between the errors the RSE was similar between the BYM2 model
+whether or not the PC prior was added. This showed that the PC prior did not 
+have an adverse effect on the estimation of $\phi$ such that it would decompose 
+into a simpler model. 
