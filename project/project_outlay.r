@@ -92,7 +92,7 @@ delta_simulatar <- function(unit){
     sp
 }
 
-run_bym2 <- function(i, covs, pc){
+run_bym2 <- function(i, covs, pc, model=F){
     base <- 'f(ID, model = "bym2", scale.model=T, constr=T, graph=cont_usa$adjmat '
     phi_str <- 'phi=list(prior ="pc", param=c(0.5, 2/3), initial=-3), \n\t\t'
     prec_str <- 'prec=list(prior="pc.prec", initial=5, param=c(0.2/0.31, 0.01))'
@@ -112,23 +112,28 @@ run_bym2 <- function(i, covs, pc){
     form <- formula(paste0(mean_, re))
     result <- inla(form , data=cont_usa$SpatialPolygons@data,
                    family="poisson", control.predictor=list(compute=T))
-    betas <- result$summary.fixed[,"0.5quant"]
+    if (model){
+        return(result)
+    }
+    beta_hat <- result$summary.fixed[,"0.5quant"]
     beta_sd <- result$summary.fixed[,"sd"]
-    if (length(betas) < 3){
-        betas <- c(betas, NA, NA)
+    if (length(beta_hat) < 3){
+        beta_hat <- c(beta_hat, NA, NA)
         beta_sd <- c(beta_sd, NA, NA)
     }
-    betas_ <- (betas - c(0, true_betas))**2
-    tau_ <- (result$summary.hyperpar["Precision for ID", "0.5quant"] - tau)**2
+    betas_ <- ((beta_hat - c(0, true_betas))**2)**.5
+    tau_hat <- result$summary.hyperpar["Precision for ID", "0.5quant"]
+    tau_ <- ((tau_hat - tau)**2)**.5
     tau_sd <- result$summary.hyperpar["Precision for ID", "sd"]
-    phi_ <- (result$summary.hyperpar["Phi for ID","0.5quant"] - phi[i])**2
+    phi_hat <- result$summary.hyperpar["Phi for ID","0.5quant"]
+    phi_ <- ((phi_hat- phi[i])**2)**.5
     phi_sd <- result$summary.hyperpar["Phi for ID","sd"]
-    c(betas_, tau_, phi_, beta_sd, tau_sd, phi_sd)
+    c(beta_hat, tau_hat, phi_hat, betas_, tau_, phi_, beta_sd, tau_sd, phi_sd)
 }
 
 run_bym2_safe <- function(i, covs, pc){
     out <- tryCatch({run_bym2(i, covs, pc)}, 
-                    error=function(cond){c(NA, NA, NA, NA, NA)})
+                    error=function(cond){rep(NA, 15)})
     out
 }
 
@@ -170,33 +175,41 @@ names(results_df) <- c("no_covs_no_pc", "no_covs_yes_pc",
                        "yes_covs_no_pc", "yes_covs_yes_pc")
 
 for(i in 1:4){
-    names(results_df[[i]]) <- c("beta0_rse", "beta1_rse", "beta2_rse",
-                                "tau_rse", "phi_rse", "beta0_sd", "beta1_sd",
+    names(results_df[[i]]) <- c("beta0_hat", "beta1_hat", "beta2_hat", 
+                                "tau_hat", "phi_hat",
+                                "beta0_rse", "beta1_rse", "beta2_rse",
+                                "tau_rse", "phi_rse", 
+                                "beta0_sd", "beta1_sd", "beta2_sd", 
                                 "tau_sd", "phi_sd")
     results_df[[i]]$phi <- phi
+    if(grepl("no_covs", names(results_df)[i])){
+        results_df[[i]]$covs <- F
+    }
+    else{
+        results_df[[i]]$covs <- T
+    }
+    if(grepl("no_pc", names(results_df)[i])){
+        results_df[[i]]$pc <- F
+    }
+    else{
+        results_df[[i]]$pc <- T
+    }
 }
 
-with(results_df$no_covs_no_pc, plot(phi, phi_rse))
-with(results_df$no_covs_yes_pc, plot(phi, phi_rse))
-plot(results_df$no_covs_no_pc$phi_rse, results_df$no_covs_yes_pc$phi_rse)
-plot(results_df$no_covs_no_pc$tau_rse, results_df$no_covs_yes_pc$tau_rse)
+df <- do.call(rbind, results_df)
 
-with(results_df$no_covs_no_pc, hist(log(phi_rse)))
-with(results_df$no_covs_no_pc, 
-     lines(c(mean(log(phi_rse), na.rm=T), mean(log(phi_rse), na.rm=T)), c(0,1000), col="red", lwd=2))
-with(results_df$no_covs_yes_pc, hist(log(phi_rse)))
-with(results_df$no_covs_yes_pc, 
-     lines(c(mean(log(phi_rse), na.rm=T), mean(log(phi_rse), na.rm=T)), c(0,1000), col="red", lwd=2))
-with(results_df$no_covs_yes_pc, mean(phi_rse, na.rm=T))
+ggplot(data=subset(df, !covs), aes(x=log(phi_rse), fill=pc)) + 
+    geom_density(alpha=.2)
+ggplot(data=subset(df, !covs), aes(y=phi_rse, x=factor(phi))) + 
+    geom_boxplot(aes(fill = factor(pc)))
 
-plot(results_df$yes_covs_no_pc$beta0_rse, results_df$yes_covs_yes_pc$beta0_rse)
-mean(results_df$yes_covs_no_pc$beta0_rse, na.rm=T) - mean(results_df$yes_covs_yes_pc$beta0_rse, na.rm=T)
-plot(results_df$yes_covs_no_pc$beta1_rse, results_df$yes_covs_yes_pc$beta1_rse)
-mean(results_df$yes_covs_no_pc$beta1_rse, na.rm=T) - mean(results_df$yes_covs_yes_pc$beta1_rse, na.rm=T)
-plot(results_df$yes_covs_no_pc$beta2_rse, results_df$yes_covs_yes_pc$beta2_rse)
-mean(results_df$yes_covs_no_pc$beta2_rse, na.rm=T) - mean(results_df$yes_covs_yes_pc$beta2_rse, na.rm=T)
+ggplot(data=subset(df, covs), aes(x=log(phi_rse), fill=pc)) + 
+    geom_density(alpha=.2)
+ggplot(data=subset(df, covs), aes(y=phi_rse, x=factor(phi))) + 
+    geom_boxplot(aes(fill = factor(pc)))
 
-#bad_result <- which(results_df$no_covs_yes_pc$phi_rse > .6)
+ggplot(data=subset(df, covs), aes(y=beta1_rse, x=factor(phi))) + 
+    geom_boxplot(aes(fill = factor(pc)))
 
-#summary(run_bym2(bad_result[1], F, T, T))
-
+ggplot(data=subset(df, covs), aes(y=beta2_rse, x=factor(phi))) + 
+    geom_boxplot(aes(fill = factor(pc)))

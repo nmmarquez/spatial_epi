@@ -156,3 +156,20 @@ an even split between the errors the RSE was similar between the BYM2 model
 whether or not the PC prior was added. This showed that the PC prior did not 
 have an adverse effect on the estimation of $\phi$ such that it would decompose 
 into a simpler model. 
+
+In addition to this we found that the estimates for $\beta$ were also accurate 
+in the model estimation process. Though this was the likely the case given that 
+the estimates of $\phi$ were accurate. This ability to reproduce the original 
+beta parameter estimates lends to the body of evidence of the benefits of 
+using the BYM2 model over the original BYM model. 
+
+While the BYM2 model has held up well to the tests that as specified in this 
+paper and the analysis in Riebler et. al. there are still are other approaches 
+to test the model with. All test up to this point have been done using a data 
+generation process that closely resembles the model. If we were to create 
+spatially dependent variables in another way, such as using an extended 
+neighborhood or cluster approach, then both $\phi$ and $\tau$ would offer 
+little insight and the retrieval of the $\beta$ parameters would be much 
+more difficult. In addition the use of other generalized linear models, 
+other than poisson, would show how flexible this model is in applications 
+outside of estimating relative risk.
