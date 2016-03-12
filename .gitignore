@@ -13,3 +13,4 @@ r_slides/
 lecture_slides/
 *.Rdata
 *.Rhistory
+*.png
