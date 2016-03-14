@@ -23,7 +23,7 @@ effects often have a non trivial effect on the outcome of the model at hand.
 ### BYM2 and the PC prior
 
 In an analysis done by Riebler et. al. (1) the authors propose a new model that 
-is a modification of the BYM model that takes into account scaling so that 
+is a modification of the Besag, York and Mollie (BYM) model that takes into account scaling so that 
 both overdispersion and spatial random effects may be included and that they 
 are on a similar scale. To illustrate this let us assume that 
 
@@ -33,17 +33,17 @@ $$
 
 Where $y_{i}$ is the observed count of some noncontagious disease for an area, 
 $\theta_{i}$ is the relative risk for the area and $E_{i}$ is the expected 
-value for a particular area. $log(\theta_{i})$ may the be modeled using the 
+value for a particular area. $log(\theta_{i})$ may then be modeled using the 
 form 
 
 $$
 \hspace*{\fill} log(\theta_{i}) = \beta \cdot x_{i}^{T} + b_{i} \hspace*{\fill}
 $$
 
-Where $x_{i}$ is a vector of explanatory covariates adn $\beta$ is an array of 
+Where $x_{i}$ is a vector of explanatory covariates and $\beta$ is an array of 
 parameters that account for the relationships between the covariates and the 
 relative risk. $b_i$ is the random effect term that accounts for the error in 
-the linear relationship between $x_{i}$ and $\theta_{i}$. It is in this term 
+the linear relationship between $x_{i}$ and $log(\theta_{i})$. It is in this term 
 that we may also account for the spatial relationships between data points. 
 Dean et al(3) proposes that the functional form of the term $b$ may be 
 written as 
@@ -61,7 +61,7 @@ $u$ when in actuality it is not part of the underlying process. This
 over-complicates the model and could lead to biased parameter estimates. In 
 addition setting hyperpriors on $\phi$ and $\tau$ becomes difficult across 
 different scenarios as it is dependent on the structure of the spatial graph 
-at hand. A way to adjust for this is proposed by Riebler et. al.(1) in 
+at hand(1). A way to adjust for this is proposed by Riebler et. al.(1) in 
 which $b$ is modeled using a modified $u_{\star}$ in which 
 
 $$
@@ -73,7 +73,7 @@ The benefit of this model is that it allows generalized specifications of
 hyperpriors such that they may be applied to many models despite their 
 geographic structure. In turn, this leads to the application of the 
 penalized complexity (PC) prior. The PC prior allows for a model to include 
-multiple terms however penalizes the model for its inclusion when it is 
+multiple terms however penalizes the model for their inclusion when it is 
 unwarranted. In our case this permits the inclusion of a spatial term that 
 will be essentially removed (i.e. $\phi = 0$) if their is not enough evidence 
 for its inclusion in the data. From here on we will refer to the Dean et al.
@@ -101,7 +101,7 @@ unnecessarily decomposing them. This is especially important for cases where
 $\phi \approx .5$ and there is equal division of contribution to relative risk 
 from both $u$ and $v$.
 
-In addition testing the BYM2 models ability to correctly asses covariate 
+In addition, testing the BYM2 models ability to correctly asses covariate 
 effects in the presence of different values of $\phi$ must also be assessed. 
 As most epidemiologists are concerned with the correlation between the observed 
 variables and the outcome, it is essential that the BYM2 model is able to 
@@ -138,10 +138,10 @@ $x \sim N_{iid}(0, 1)$.
 
 With both of these models we will generate values for relative risk ($\theta$) 
 for each location and from it sample from the poisson distribution in order to 
-have an observed value $y$ while setting the expected value to 60.  
+have an observed value $y$ while setting the expected value to 60 ($E=60$). 
 We will then fit a bym2 model with the correct 
 number of covariates (0 for the first model and 2 for the second) and asses the 
-models ability to recover the true parameters, both $\beta$ and $\phi$ form the 
+models ability to recover the true parameters, both $\beta$ and $\phi$, from the 
 simulated data. 
 
 The data generation process was applied to an area of the United States 
