@@ -147,7 +147,7 @@ simulated data.
 The data generation process was applied to an area of the United States 
 which covers the states of Texas and Louisiana. Each unit within the area 
 was a county. The region was chosen due to the authors familiarity with the 
-area and the spatial continuity. Each unique paramterization of the model, 
+area and the spatial continuity. Each unique parameterization of the model, 
 described above, generated 500 unique simulations resulting in a total of 
 6000 analysis (500 random effect simulations; 3 values of delta, covariates 
 present or not).
@@ -181,7 +181,7 @@ when no covaraites are included.
 
 **Figure 3: RSE of all Parameters In Covariate Free Simulations** 
 
-The second graph shows the same Paramters estimated when covariates are 
+The second graph shows the same parameters estimated when covariates are 
 included as well as the RSE of the additional $\beta$ terms. 
 
 ![O](/home/neal/Documents/Classes/spatial_epi/project/wcov_rse.png "")\  
